@@ -3,8 +3,9 @@ from telegram import Update, InputFile
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 import os
 import json
-from datetime import datetime, timedelta
+from datetime import datetime
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from flask import Flask
 
 # Caminho do arquivo de backup
 BACKUP_FILE = 'bot_backup.bak'
@@ -123,7 +124,7 @@ async def cpf(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             f"Você tem {remaining_usage}/{DAILY_LIMIT} consultas restantes para hoje. O limite será resetado às 00:00.")
 
     except requests.exceptions.RequestException as e:
-        await update.message.reply_text(f"Ocorreu um erro ao consultar o CPF , formato correto : /cpf 86914804168")
+        await update.message.reply_text(f"Ocorreu um erro ao consultar o CPF, formato correto : /cpf 86914804168")
 
 
 def main():
@@ -140,7 +141,19 @@ def main():
     scheduler.add_job(reset_daily_usage, trigger='cron', hour=0, minute=0)
     scheduler.start()
 
-    app.run_polling()
+    # Inicializa o bot
+    app.initialize()
+    app.start()
+
+    # Inicia a aplicação Flask
+    flask_app = Flask(__name__)
+
+    @flask_app.route('/')
+    def index():
+        return "Bot de consulta está funcionando."
+
+    port = int(os.environ.get('PORT', 10000))
+    flask_app.run(host='0.0.0.0', port=port)
 
 
 if __name__ == '__main__':
